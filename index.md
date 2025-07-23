@@ -4,9 +4,9 @@
 
 ## Example of a web map from OpenGulf
 
-<iframe src="https://opengulf.github.io/webapps/Pearlprotection/index.html#6/28.516/52.077" width="100%" height="800"></iframe>
+<iframe src="https://opengulf.github.io/webapps/Pearlprotection/index.html#6/28.516/52.077" width="100%" height="500"></iframe>
 
 ## Example of a Voyant Tools wordcloud from with *Frankenstein*
-<iframe style='width: 289px; height: 220px;' 
+<iframe style='width: 489px; height: 520px;' 
 src='https://voyant-tools.org/tool/Cirrus/?corpus=frank'></iframe>
 
