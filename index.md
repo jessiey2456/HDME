@@ -10,3 +10,243 @@
 <iframe style='width: 489px; height: 520px;' 
 src='https://voyant-tools.org/tool/Cirrus/?corpus=frank'></iframe>
 
+
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="UTF-8"/>
+        <title>Kepler.gl embedded map</title>
+
+        <!--Uber Font-->
+        <link rel="stylesheet" href="https://d1a3f4spazzrp4.cloudfront.net/kepler.gl/uber-fonts/4.0.0/superfine.css">
+
+        <!--Kepler css-->
+        <link href="https://unpkg.com/kepler.gl@3.1.8/umd/keplergl.min.css" rel="stylesheet">
+
+        <!--MapBox css-->
+        <link href="https://api.tiles.mapbox.com/mapbox-gl-js/v1.1.1/mapbox-gl.css" rel="stylesheet">
+        <link href="https://unpkg.com/maplibre-gl@^3/dist/maplibre-gl.css" rel="stylesheet">
+
+        <!-— facebook open graph tags -->
+        <meta property="og:url" content="http://kepler.gl/" />
+        <meta property="og:title" content="Large-scale WebGL-powered Geospatial Data Visualization Tool" />
+        <meta property="og:description" content="Kepler.gl is a powerful web-based geospatial data analysis tool. Built on a high performance rendering engine and designed for large-scale data sets." />
+        <meta property="og:site_name" content="kepler.gl" />
+        <meta property="og:image" content="https://d1a3f4spazzrp4.cloudfront.net/kepler.gl/kepler.gl-meta-tag.png" />
+        <meta property="og:image:type" content="image/png" />
+        <meta property="og:image:width" content="800" />
+        <meta property="og:image:height" content="800" />
+
+        <!-— twitter card tags -->
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:site" content="@openjsf">
+        <meta name="twitter:creator" content="@openjsf">
+        <meta name="twitter:title" content="Large-scale WebGL-powered Geospatial Data Visualization Tool">
+        <meta name="twitter:description" content="Kepler.gl is a powerful web-based geospatial data analysis tool. Built on a high performance rendering engine and designed for large-scale data sets.">
+        <meta name="twitter:image" content="https://d1a3f4spazzrp4.cloudfront.net/kepler.gl/kepler.gl-meta-tag.png" />
+
+        <!-- Load React/Redux -->
+        <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
+        <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
+        <script src="https://unpkg.com/redux@4.2.1/dist/redux.js" crossorigin></script>
+        <script src="https://unpkg.com/react-redux@8.1.2/dist/react-redux.min.js" crossorigin></script>
+        <script src="https://unpkg.com/styled-components@6.1.8/dist/styled-components.min.js" crossorigin></script>
+
+        <!-- Load Kepler.gl -->
+        <script src="https://unpkg.com/kepler.gl@3.1.8/umd/keplergl.min.js" crossorigin></script>
+
+        <style type="text/css">
+          body {margin: 0; padding: 0; overflow: hidden;}
+        </style>
+
+        <!--MapBox token-->
+        <script>
+          /**
+           * Provide your MapBox Token
+           **/
+          const MAPBOX_TOKEN = 'pk.eyJ1IjoidWNmLW1hcGJveCIsImEiOiJjbDBiYzlveHgwdnF0M2NtZzUzZWZuNWZ4In0.l9J8ptz3MKwaU9I4PtCcig';
+          const WARNING_MESSAGE = 'Please Provide a Mapbox Token in order to use Kepler.gl. Edit this file and fill out MAPBOX_TOKEN with your access key';
+        </script>
+
+        <!-- GA: Delete this as you wish, However to pat ourselves on the back, we only track anonymous pageview to understand how many people are using kepler.gl. -->
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+          ga('create', 'UA-64694404-19', {
+            'storage': 'none',
+            'clientId': localStorage.getItem('ga:clientId')
+          });
+          ga(function(tracker) {
+              localStorage.setItem('ga:clientId', tracker.get('clientId'));
+          });
+          ga('set', 'checkProtocolTask', null); // Disable file protocol checking.
+          ga('set', 'checkStorageTask', null); // Disable cookie storage checking.
+          ga('set', 'historyImportTask', null); // Disable history checking (requires reading from cookies).
+          ga('set', 'page', 'keplergl-html');
+          ga('send', 'pageview');
+        </script>
+      </head>
+      <body>
+        <!-- We will put our React component inside this div. -->
+        <div id="app">
+          <!-- Kepler.gl map will be placed here-->
+        </div>
+
+        <!-- Load our React component. -->
+        <script>
+          /* Validate Mapbox Token */
+          if ((MAPBOX_TOKEN || '') === '' || MAPBOX_TOKEN === 'PROVIDE_MAPBOX_TOKEN') {
+            alert(WARNING_MESSAGE);
+          }
+
+          /** STORE **/
+          const reducers = (function createReducers(redux, keplerGl) {
+            return redux.combineReducers({
+              // mount keplerGl reducer
+              keplerGl: keplerGl.keplerGlReducer.initialState({
+                uiState: {
+                  readOnly: true,
+                  currentModal: null
+                }
+              })
+            });
+          }(Redux, KeplerGl));
+
+          const middleWares = (function createMiddlewares(keplerGl) {
+            return keplerGl.enhanceReduxMiddleware([
+              // Add other middlewares here
+            ]);
+          }(KeplerGl));
+
+          const enhancers = (function craeteEnhancers(redux, middles) {
+            return redux.applyMiddleware(...middles);
+          }(Redux, middleWares));
+
+          const store = (function createStore(redux, enhancers) {
+            const initialState = {};
+
+            return redux.createStore(
+              reducers,
+              initialState,
+              redux.compose(enhancers)
+            );
+          }(Redux, enhancers));
+          /** END STORE **/
+
+          /** COMPONENTS **/
+          var KeplerElement = (function makeKeplerElement(react, keplerGl, mapboxToken) {
+            var LogoSvg = function LogoSvg() {
+              return react.createElement(
+                "div",
+                { className: "logo-container", style: {position: 'fixed', zIndex: 10000, padding: '4px'} },
+                  react.createElement(
+                    "svg",
+                    {
+                      className: "kepler_gl__logo",
+                      width: "107px",
+                      height: "21px",
+                      viewBox: "0 0 124 24"
+                    },
+                    react.createElement(
+                      "g",
+                      { transform: "translate(13.500000, 13.500000) rotate(45.000000) translate(-13.500000, -13.500000) translate(4.000000, 4.000000)" },
+                      react.createElement("rect", { x: "0", y: "6", transform: "matrix(2.535181e-06 1 -1 2.535181e-06 18.1107 6.0369)", fill: "#535C6C", width: "12.1", height: "12.1" }),
+                      react.createElement("rect", { x: "6", y: "0", transform: "matrix(2.535182e-06 1 -1 2.535182e-06 18.1107 -6.0369)", fill:"#1FBAD6", width: "12.1", height: "12.1" })
+                    ),
+                    react.createElement(
+                      "g",
+                      {},
+                      react.createElement("path", { fill:"#1FBAD6", d: "M39,8.7h2.2l-2.8,4.2l2.9,5.1H39l-2.4-4.2h-1.3V18h-2V5l2-0.1v7.3h1.3L39,8.7z" }),
+                      react.createElement("path", { fill:"#1FBAD6", d: "M42.4,13.3c0-1.5,0.4-2.7,1.1-3.5s1.8-1.2,3.1-1.2c1.3,0,2.2,0.4,2.8,1.1c0.6,0.7,0.9,1.8,0.9,3.3 c0,0.4,0,0.8,0,1.1h-5.8c0,1.6,0.8,2.4,2.4,2.4c1,0,2-0.2,2.9-0.6l0.2,1.7c-0.4,0.2-0.9,0.4-1.4,0.5s-1.1,0.2-1.7,0.2 c-1.5,0-2.6-0.4-3.3-1.2C42.8,16.1,42.4,14.9,42.4,13.3z M46.6,10.1c-0.7,0-1.2,0.2-1.5,0.5c-0.4,0.4-0.6,0.9-0.6,1.7h4 c0-0.8-0.2-1.4-0.5-1.7S47.2,10.1,46.6,10.1z" }),
+                      react.createElement("path", { fill:"#1FBAD6", d: "M57.1,18.2c-1,0-1.8-0.3-2.3-0.9l0,0l0,1.3v2.5h-2V8.7h1.5l0.3,0.9h0c0.3-0.3,0.7-0.6,1.2-0.7 c0.4-0.2,0.9-0.3,1.4-0.3c1.2,0,2.1,0.4,2.7,1.1c0.6,0.7,0.9,2,0.9,3.7c0,1.6-0.3,2.8-1,3.7C59.2,17.8,58.3,18.2,57.1,18.2z M56.7,10.3c-0.4,0-0.8,0.1-1.1,0.2c-0.3,0.2-0.6,0.4-0.8,0.7v4.3c0.2,0.3,0.4,0.5,0.7,0.7c0.3,0.2,0.7,0.3,1.1,0.3 c0.7,0,1.2-0.2,1.6-0.7c0.4-0.5,0.5-1.3,0.5-2.5c0-0.8-0.1-1.4-0.2-1.8s-0.4-0.7-0.7-0.9C57.6,10.4,57.2,10.3,56.7,10.3z" }),
+                      react.createElement("path", { fill:"#1FBAD6", d: "M63.2,16V5l2-0.1v10.8c0,0.3,0.1,0.5,0.2,0.6c0.1,0.1,0.3,0.2,0.6,0.2c0.3,0,0.6,0,0.9-0.1V18 c-0.4,0.1-1,0.2-1.6,0.2c-0.8,0-1.3-0.2-1.7-0.5S63.2,16.8,63.2,16z" }),
+                      react.createElement("path", { fill:"#1FBAD6", d: "M68.2,13.3c0-1.5,0.4-2.7,1.1-3.5c0.7-0.8,1.8-1.2,3.1-1.2c1.3,0,2.2,0.4,2.8,1.1c0.6,0.7,0.9,1.8,0.9,3.3 c0,0.4,0,0.8,0,1.1h-5.8c0,1.6,0.8,2.4,2.4,2.4c1,0,2-0.2,2.9-0.6l0.2,1.7c-0.4,0.2-0.9,0.4-1.4,0.5s-1.1,0.2-1.7,0.2 c-1.5,0-2.6-0.4-3.3-1.2C68.6,16.1,68.2,14.9,68.2,13.3z M72.4,10.1c-0.7,0-1.2,0.2-1.5,0.5c-0.4,0.4-0.6,0.9-0.6,1.7h4 c0-0.8-0.2-1.4-0.5-1.7S73,10.1,72.4,10.1z" }),
+                      react.createElement("path", { fill:"#1FBAD6", d: "M80.2,8.7l0.1,1.7h0c0.3-0.6,0.7-1.1,1.1-1.4c0.4-0.3,1-0.5,1.6-0.5c0.4,0,0.7,0,1,0.1l-0.1,2 c-0.3-0.1-0.7-0.2-1-0.2c-0.7,0-1.3,0.3-1.7,0.8c-0.4,0.5-0.7,1.2-0.7,2.1V18h-2V8.7H80.2z" }),
+                      react.createElement("path", { fill:"#1FBAD6", d: "M83.8,17c0-0.8,0.4-1.2,1.2-1.2c0.8,0,1.2,0.4,1.2,1.2c0,0.8-0.4,1.1-1.2,1.1C84.2,18.2,83.8,17.8,83.8,17z" }),
+                      react.createElement("path", { fill:"#1FBAD6", d: "M88.5,18.7c0-0.8,0.4-1.4,1.2-1.8c-0.6-0.3-0.9-0.8-0.9-1.5c0-0.7,0.4-1.2,1.1-1.6c-0.3-0.3-0.6-0.6-0.7-0.9 c-0.2-0.4-0.2-0.8-0.2-1.3c0-1,0.3-1.8,0.9-2.3c0.6-0.5,1.6-0.8,2.8-0.8c0.5,0,1,0,1.4,0.1c0.4,0.1,0.8,0.2,1.1,0.4l2.4-0.2v1.5 h-1.5c0.2,0.4,0.2,0.8,0.2,1.3c0,1-0.3,1.7-0.9,2.2s-1.5,0.8-2.7,0.8c-0.7,0-1.2-0.1-1.6-0.2c-0.1,0.1-0.2,0.2-0.3,0.3 c-0.1,0.1-0.1,0.2-0.1,0.4c0,0.2,0.1,0.3,0.2,0.4c0.1,0.1,0.3,0.2,0.6,0.2l2.7,0.2c1,0.1,1.7,0.3,2.2,0.6c0.5,0.3,0.8,0.9,0.8,1.7 c0,0.6-0.2,1.1-0.5,1.5c-0.4,0.4-0.9,0.8-1.5,1c-0.7,0.2-1.5,0.4-2.4,0.4c-1.3,0-2.3-0.2-3-0.6C88.8,20.1,88.5,19.5,88.5,18.7z M95.1,18.4c0-0.3-0.1-0.5-0.3-0.7s-0.6-0.2-1.1-0.3l-2.7-0.3c-0.2,0.1-0.4,0.3-0.5,0.5c-0.1,0.2-0.2,0.4-0.2,0.6 c0,0.4,0.2,0.8,0.5,1c0.4,0.2,1,0.3,1.8,0.3C94.2,19.5,95.1,19.2,95.1,18.4z M94.3,11.5c0-0.6-0.1-1-0.4-1.2 c-0.3-0.2-0.7-0.3-1.3-0.3c-0.7,0-1.1,0.1-1.4,0.3c-0.3,0.2-0.4,0.6-0.4,1.2s0.1,1,0.4,1.2c0.3,0.2,0.7,0.3,1.4,0.3 c0.6,0,1.1-0.1,1.3-0.4S94.3,12,94.3,11.5z" }),
+                      react.createElement("path", { fill:"#1FBAD6", d: "M99.4,16V5l2-0.1v10.8c0,0.3,0.1,0.5,0.2,0.6c0.1,0.1,0.3,0.2,0.6,0.2c0.3,0,0.6,0,0.9-0.1V18 c-0.4,0.1-1,0.2-1.6,0.2c-0.8,0-1.3-0.2-1.7-0.5S99.4,16.8,99.4,16z" })
+                    )
+                  )
+                );
+              };
+
+            return function App() {
+              var rootElm = react.useRef(null);
+              var _useState = react.useState({
+                width: window.innerWidth,
+                height: window.innerHeight
+              });
+              var windowDimension = _useState[0];
+              var setDimension = _useState[1];
+              react.useEffect(function sideEffect(){
+                function handleResize() {
+                  setDimension({width: window.innerWidth, height: window.innerHeight});
+                };
+                window.addEventListener('resize', handleResize);
+                return function() {window.removeEventListener('resize', handleResize);};
+              }, []);
+              return react.createElement(
+                'div',
+                {style: {position: 'absolute', left: 0, width: '100vw', height: '100vh'}},
+                LogoSvg(),
+                react.createElement(keplerGl.KeplerGl, {
+                  mapboxApiAccessToken: mapboxToken,
+                  id: "map",
+                  width: windowDimension.width,
+                  height: windowDimension.height
+                })
+              )
+            }
+          }(React, KeplerGl, MAPBOX_TOKEN));
+
+          const app = (function createReactReduxProvider(react, reactRedux, KeplerElement) {
+            return react.createElement(
+              reactRedux.Provider,
+              {store},
+              react.createElement(KeplerElement, null)
+            )
+          }(React, ReactRedux, KeplerElement));
+          /** END COMPONENTS **/
+
+          /** Render **/
+          (function render(react, reactDOM, app) {
+            const container = document.getElementById('app');
+            const root = reactDOM.createRoot(container);
+            root.render(app);
+          }(React, ReactDOM, app));
+        </script>
+        <!-- The next script will show how to interact directly with Kepler map store -->
+        <script>
+          /**
+           * Customize map.
+           * In the following section you can use the store object to dispatch Kepler.gl actions
+           * to add new data and customize behavior
+           */
+          (function customize(keplerGl, store) {
+            const datasets = [{"version":"v1","data":{"id":"yc83od","label":"wasteland.csv","color":[143,47,191],"allData":[["9a3ce94f-2fb0-47fc-a073-5bff530baf62","The Waste Land.txt","Hofgarten","char-offset:438","PLACE","http://sws.geonames.org/2775541","Hopfgarten im Brixental",null,47.45,12.16667,null,"VERIFIED",null,null,null,null],["696bf451-0369-48e0-a2bb-56604e803bcf","The Waste Land.txt","Europe","char-offset:1948","PLACE","http://pleiades.stoa.org/places/1001887","Europe",null,42.5,27.5,"province","UNVERIFIED",null,null,null,null],["fadf74fb-66ec-43a7-b320-91ac631b7b99","The Waste Land.txt","London Bridge","char-offset:2633","PLACE","http://mapoflondon.uvic.ca/LOND1.htm","London Bridge",null,51.5079615,-0.087354,null,"VERIFIED",null,null,null,null],["57e43f12-1f72-4891-b956-96ac67375c8f","The Waste Land.txt","King William Street","char-offset:2817","PLACE","http://mapoflondon.uvic.ca/STNI1.htm","Nicholas Lane",null,51.511814098517505,-0.0873173545809282,null,"VERIFIED",null,null,null,null],["83e07135-f9d0-4ead-ac96-9c1313f8e55e","The Waste Land.txt","Thames","char-offset:7826","PLACE","http://sws.geonames.org/2208333","Thames",null,-37.13832,175.54011,null,"VERIFIED",null,null,null,null],["c5eb0032-c206-4e91-a5d5-8b793afda1f9","The Waste Land.txt","Thames","char-offset:8178","PLACE","http://sws.geonames.org/2208333","Thames",null,-37.13832,175.54011,null,"VERIFIED",null,null,null,null],["8efd9f9e-098c-451e-b17e-cec0b5b3a098","The Waste Land.txt","Thames","char-offset:8223","PLACE","http://sws.geonames.org/2208333","Thames",null,-37.13832,175.54011,null,"VERIFIED",null,null,null,null],["afe03bf1-7b9c-4cf8-9e5a-6ea3ee3e5b91","The Waste Land.txt","Smyrna","char-offset:9158","PLACE","http://pleiades.stoa.org/places/550893","Smyrna/Eurydikeia|Smyrna/Eurydikeia, İzmir","-0330/0640",38.41905,27.1383,"settlement","VERIFIED",null,null,null,null],["49506b72-2df8-41d4-96f5-78cbf80a6065","The Waste Land.txt","London","char-offset:9222","PLACE","http://sws.geonames.org/2643743","London",null,51.50853,-0.12574,null,"VERIFIED",null,null,null,null],["c5d9f48a-96c9-4ad1-96d4-c9357f44e808","The Waste Land.txt","Cannon Street Hote","char-offset:9296","PLACE",null,null,null,null,null,null,"UNVERIFIED",null,null,null,null],["1f41cb9f-5233-4430-873d-2cb503afc119","The Waste Land.txt","Metropole","char-offset:9345","PLACE",null,null,null,null,null,null,"UNVERIFIED",null,null,null,null],["792fd103-5fcf-41de-9a81-d75169821e8d","The Waste Land.txt","Thebes","char-offset:10648","PLACE","http://geo-kima.org/place/2262","Thebes (Egypt : Extinct city)",null,null,null,null,"VERIFIED",null,null,null,null],["41004e5c-6c6a-4e4b-bc49-0105785a76dc","The Waste Land.txt","Strand","char-offset:11185","PLACE","http://mapoflondon.uvic.ca/STRA9.htm","The Strand",null,null,null,null,"VERIFIED",null,null,null,null],["c55639b5-3b3c-492c-82df-5ce3bfe1dc65","The Waste Land.txt","Queen Victoria Street","char-offset:11196","PLACE","http://pleiades.stoa.org/places/17649950","London Mithraeum|Mithraeum, London","-0030/0640",51.512628,-0.091644,"findspot,temple-2","VERIFIED",null,null,null,null],["9a091256-9c5b-4a64-bcee-0fd902c9652f","The Waste Land.txt","Lower Thames Street","char-offset:11276","PLACE","http://mapoflondon.uvic.ca/THAM1.htm","Thames Street",null,null,null,null,"VERIFIED",null,null,null,null],["7104c615-3c1f-4250-b144-349aef4f18db","The Waste Land.txt","Thames","char-offset:11282","PLACE","http://sws.geonames.org/2208333","Thames",null,-37.13832,175.54011,null,"VERIFIED",null,null,null,null],["565bb644-a531-409b-b717-1ae01d9bd2c7","The Waste Land.txt","Greenwich","char-offset:11796","PLACE","http://geo-kima.org/place/8538","Greenwich (London, England)",null,null,null,null,"VERIFIED",null,null,null,null],["7e01f3e1-191a-4c23-a3bc-6a9787680189","The Waste Land.txt","Isle of Dogs","char-offset:11836","PLACE",null,null,null,null,null,null,"UNVERIFIED",null,null,null,null],["fe094555-3394-4e74-b6e0-e3c044623b59","The Waste Land.txt","Leicester","char-offset:11977","PLACE","http://sws.geonames.org/2644668","Leicester",null,52.6386,-1.13169,null,"UNVERIFIED",null,null,null,null],["cd679b2a-5092-45bf-9f4c-70f9ff60e7e8","The Waste Land.txt","Richmond","char-offset:12439","PLACE","http://geo-kima.org/place/6823","Richmond (England)",null,null,null,null,"VERIFIED",null,null,null,null],["14291208-10ed-42d5-961c-ee462daa14bc","The Waste Land.txt","Richmond","char-offset:12469","PLACE","http://geo-kima.org/place/6823","Richmond (England)",null,null,null,null,"VERIFIED",null,null,null,null],["50e24e42-16b5-4ac5-90ff-c8799283c04a","The Waste Land.txt","Moorgate","char-offset:12553","PLACE","http://mapoflondon.uvic.ca/MOOR2.htm","Moorgate",null,null,null,null,"VERIFIED",null,null,null,null],["08657406-77cf-401a-b7a5-b14dc9da2867","The Waste Land.txt","Margate","char-offset:12690","PLACE","http://sws.geonames.org/2643044","Margate",null,51.38132,1.38617,null,"VERIFIED",null,null,null,null],["0c556846-36d5-4934-8538-38b8457a3bb4","The Waste Land.txt","Jerusalem","char-offset:15392","PLACE","http://sws.geonames.org/293198","Jerusalem",null,31.74321305841924,35.0043676975945,null,"VERIFIED",null,null,null,null],["8d3e6473-3eff-4b55-a709-e640b89000e5","The Waste Land.txt","Athens","char-offset:15402","PLACE","http://sws.geonames.org/264371","Athens",null,37.97945,23.71622,null,"VERIFIED",null,null,null,null],["916a853a-86ce-4b26-bba0-7bc453fb370b","The Waste Land.txt","Alexandria","char-offset:15409","PLACE","http://pleiades.stoa.org/places/60409","Alexandria","-0330/-0030",null,null,"settlement","VERIFIED",null,null,null,null],["c04bd448-18d2-4cc7-b737-3cb0ad8c0be3","The Waste Land.txt","Vienna","char-offset:15420","PLACE","http://sws.geonames.org/2761367","Vienna",null,48.22290476190474,16.385051020408156,null,"UNVERIFIED",null,null,null,null],["556f0f19-cb6a-4cca-880a-eafb9ae21f04","The Waste Land.txt","London","char-offset:15427","PLACE","http://sws.geonames.org/2643743","London",null,51.50853,-0.12574,null,"VERIFIED",null,null,null,null],["229cc214-432d-4318-b540-b086f3a8dbc0","The Waste Land.txt","Himavant","char-offset:16259","PLACE",null,null,null,null,null,null,"UNVERIFIED",null,null,null,null],["e9232b60-5d38-4fac-9601-1449778bc591","The Waste Land.txt","London Bridge","char-offset:17232","PLACE","http://mapoflondon.uvic.ca/LOND1.htm","London Bridge",null,51.5079615,-0.087354,null,"VERIFIED",null,null,null,null],["57c3a659-78cd-4e02-9505-7aa1f3732054","The Waste Land.txt","Aquitaine","char-offset:17380","PLACE","http://geo-kima.org/place/9098","Aquitaine (France)",null,null,null,null,"VERIFIED",null,null,null,null]],"fields":[{"name":"UUID","type":"string","format":"","analyzerType":"STRING"},{"name":"FILE","type":"string","format":"","analyzerType":"STRING"},{"name":"QUOTE_TRANSCRIPTION","type":"string","format":"","analyzerType":"STRING"},{"name":"ANCHOR","type":"string","format":"","analyzerType":"STRING"},{"name":"TYPE","type":"string","format":"","analyzerType":"STRING"},{"name":"URI","type":"string","format":"","analyzerType":"STRING"},{"name":"VOCAB_LABEL","type":"string","format":"","analyzerType":"STRING"},{"name":"VOCAB_TEMPORAL_BOUNDS","type":"string","format":"","analyzerType":"STRING"},{"name":"LAT","type":"real","format":"","analyzerType":"FLOAT"},{"name":"LNG","type":"real","format":"","analyzerType":"FLOAT"},{"name":"PLACE_TYPE","type":"string","format":"","analyzerType":"STRING"},{"name":"VERIFICATION_STATUS","type":"string","format":"","analyzerType":"STRING"},{"name":"TAGS","type":"string","format":"","analyzerType":"STRING"},{"name":"COMMENTS","type":"string","format":"","analyzerType":"STRING"},{"name":"GROUP_ID","type":"string","format":"","analyzerType":"STRING"},{"name":"GROUP_ORDER","type":"string","format":"","analyzerType":"STRING"}],"type":"","metadata":{"id":"yc83od","format":"row","label":"wasteland.csv"},"disableDataOperation":false}}];
+            const config = {"version":"v1","config":{"visState":{"filters":[],"layers":[{"id":"2tu6qb9","type":"point","config":{"dataId":"yc83od","columnMode":"points","label":"point","color":[248,149,112],"highlightColor":[252,242,26,255],"columns":{"lat":"LAT","lng":"LNG"},"isVisible":true,"visConfig":{"radius":10,"fixedRadius":false,"opacity":0.8,"outline":false,"thickness":2,"strokeColor":null,"colorRange":{"name":"Global Warming","type":"sequential","category":"Uber","colors":["#4C0035","#880030","#B72F15","#D6610A","#EF9100","#FFC300"]},"strokeColorRange":{"name":"Global Warming","type":"sequential","category":"Uber","colors":["#4C0035","#880030","#B72F15","#D6610A","#EF9100","#FFC300"]},"radiusRange":[0,50],"filled":true,"billboard":false,"allowHover":true,"showNeighborOnHover":false,"showHighlightColor":true},"hidden":false,"textLabel":[{"field":null,"color":[255,255,255],"size":18,"offset":[0,0],"anchor":"start","alignment":"center","outlineWidth":0,"outlineColor":[255,0,0,255],"background":false,"backgroundColor":[0,0,200,255]}]},"visualChannels":{"colorField":null,"colorScale":"quantile","strokeColorField":null,"strokeColorScale":"quantile","sizeField":null,"sizeScale":"linear"}}],"effects":[],"interactionConfig":{"tooltip":{"fieldsToShow":{"yc83od":[{"name":"UUID","format":null},{"name":"FILE","format":null},{"name":"QUOTE_TRANSCRIPTION","format":null},{"name":"ANCHOR","format":null},{"name":"TYPE","format":null}]},"compareMode":false,"compareType":"absolute","enabled":true},"brush":{"size":0.5,"enabled":false},"geocoder":{"enabled":false},"coordinate":{"enabled":false}},"layerBlending":"normal","overlayBlending":"normal","splitMaps":[],"animationConfig":{"currentTime":null,"speed":1},"editor":{"features":[],"visible":true}},"mapState":{"bearing":0,"dragRotate":false,"latitude":34.146656549010935,"longitude":21.487243554118603,"pitch":0,"zoom":4.0942613864073705,"isSplit":false,"isViewportSynced":true,"isZoomLocked":false,"splitMapViewports":[]},"mapStyle":{"styleType":"dark-matter","topLayerGroups":{},"visibleLayerGroups":{"label":true,"road":true,"border":false,"building":true,"water":true,"land":true,"3d building":false},"threeDBuildingColor":[15.035172933000911,15.035172933000911,15.035172933000911],"backgroundColor":[0,0,0],"mapStyles":{}},"uiState":{"mapControls":{"mapLegend":{"active":false}}}}};
+
+            const loadedData = keplerGl.KeplerGlSchema.load(
+              datasets,
+              config
+            );
+
+            // For some reason Kepler overwrites the config without extra wait time
+            window.setTimeout(() => {
+              store.dispatch(
+                keplerGl.addDataToMap({
+                  datasets: loadedData.datasets,
+                  config: loadedData.config,
+                  options: {
+                    centerMap: false,
+                  },
+                })
+              );
+            }, 500);
+          }(KeplerGl, store))
+        </script>
+      </body>
+    </html>
+  
